@@ -1,0 +1,34 @@
+# Data files (download separately)
+data/*.topojson
+data/*.geojson
+!data/.gitkeep
+!data/README.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# .NET
+api/**/bin/
+api/**/obj/
+*.user
+*.suo
+
+# Node/React
+web/node_modules/
+web/dist/
+web/.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
