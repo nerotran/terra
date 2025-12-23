@@ -1,3 +1,7 @@
+# Environment files
+.env
+!.env.example
+
 # Data files (download separately)
 data/*.topojson
 data/*.geojson
@@ -20,6 +24,8 @@ api/**/obj/
 web/node_modules/
 web/dist/
 web/.env.local
+*.log
+npm-debug.log*
 
 # IDE
 .idea/
@@ -32,3 +38,7 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# Claude
+.claude/
+.serena/

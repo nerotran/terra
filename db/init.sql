@@ -10,6 +10,19 @@ CREATE TABLE controllers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Base map features (land, lakes, etc.)
+CREATE TABLE base_map (
+    id SERIAL PRIMARY KEY,
+    feature_type VARCHAR(50) NOT NULL,  -- 'land', 'lakes', 'rivers'
+    name VARCHAR(200),
+    geometry GEOMETRY(Geometry, 4326),
+    properties JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_base_map_geometry ON base_map USING GIST(geometry);
+CREATE INDEX idx_base_map_type ON base_map(feature_type);
+
 -- Time snapshots table
 CREATE TABLE time_snapshots (
     id SERIAL PRIMARY KEY,
@@ -114,12 +127,15 @@ ORDER BY ts.sort_year;
 -- Cumulative territories (union of all territories up to each time period)
 -- Run REFRESH MATERIALIZED VIEW cumulative_territories; after importing data
 CREATE MATERIALIZED VIEW cumulative_territories AS
-SELECT 
+SELECT
     ts.id as snapshot_id,
     ts.year,
     ts.era,
     ts.sort_year,
     ts.label,
+    (SELECT c.color FROM controllers c
+     JOIN territories t ON t.controller_id = c.id
+     WHERE t.snapshot_id = ts.id LIMIT 1) as color,
     ST_Multi(ST_Union(ST_MakeValid(t2.geometry)))::geometry(MultiPolygon, 4326) as geometry
 FROM time_snapshots ts
 JOIN time_snapshots ts2 ON ts2.sort_year <= ts.sort_year
@@ -134,12 +150,13 @@ CREATE INDEX idx_cumulative_geom ON cumulative_territories USING GIST(geometry);
 
 -- View for cumulative territories as GeoJSON
 CREATE OR REPLACE VIEW cumulative_territories_geojson AS
-SELECT 
+SELECT
     snapshot_id,
     year,
     era,
     sort_year,
     label,
+    color,
     ST_AsGeoJSON(geometry)::jsonb as geometry
 FROM cumulative_territories
 ORDER BY sort_year;

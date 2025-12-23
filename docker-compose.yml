@@ -4,17 +4,19 @@ services:
   postgres:
     image: postgis/postgis:16-3.4
     container_name: terra-db
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: terra
-      POSTGRES_PASSWORD: terra_dev
-      POSTGRES_DB: terra
+      POSTGRES_USER: ${POSTGRES_USER:-terra}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-terra_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-terra}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - terra_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U terra -d terra"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-terra} -d ${POSTGRES_DB:-terra}"]
       interval: 10s
       timeout: 5s
       retries: 5
