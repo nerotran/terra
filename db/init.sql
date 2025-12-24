@@ -1,8 +1,8 @@
 -- Enable PostGIS extension
 CREATE EXTENSION IF NOT EXISTS postgis;
 
--- Controllers table (Rome, Carthage, etc.)
-CREATE TABLE controllers (
+-- Nations table (Rome, Carthage, etc.)
+CREATE TABLE nations (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     display_name VARCHAR(200),
@@ -37,24 +37,24 @@ CREATE TABLE time_snapshots (
 -- Territories table with GeoJSON stored as JSONB
 CREATE TABLE territories (
     id SERIAL PRIMARY KEY,
-    controller_id INTEGER NOT NULL REFERENCES controllers(id),
+    nation_id INTEGER NOT NULL REFERENCES nations(id),
     snapshot_id INTEGER NOT NULL REFERENCES time_snapshots(id),
     name VARCHAR(200),
     geometry GEOMETRY(MultiPolygon, 4326),  -- PostGIS geometry column
     geojson JSONB,  -- Original GeoJSON for reference
     properties JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(controller_id, snapshot_id, name)
+    UNIQUE(nation_id, snapshot_id, name)
 );
 
 -- Create spatial index for fast geographic queries
 CREATE INDEX idx_territories_geometry ON territories USING GIST(geometry);
 CREATE INDEX idx_territories_snapshot ON territories(snapshot_id);
-CREATE INDEX idx_territories_controller ON territories(controller_id);
+CREATE INDEX idx_territories_nation ON territories(nation_id);
 CREATE INDEX idx_snapshots_sort_year ON time_snapshots(sort_year);
 
--- Seed data: Roman controllers
-INSERT INTO controllers (name, display_name, color) VALUES
+-- Seed data: Roman nations
+INSERT INTO nations (name, display_name, color) VALUES
     ('rome', 'Roman Empire', '#8B0000'),
     ('rome_republic', 'Roman Republic', '#CD5C5C');
 
@@ -62,22 +62,22 @@ INSERT INTO controllers (name, display_name, color) VALUES
 
 -- Function to import GeoJSON feature
 CREATE OR REPLACE FUNCTION import_geojson_feature(
-    p_controller_name VARCHAR,
+    p_nation_name VARCHAR,
     p_year INTEGER,
     p_era VARCHAR,
     p_geojson JSONB
 ) RETURNS INTEGER AS $$
 DECLARE
-    v_controller_id INTEGER;
+    v_nation_id INTEGER;
     v_snapshot_id INTEGER;
     v_territory_id INTEGER;
     v_geometry GEOMETRY;
     v_name VARCHAR;
 BEGIN
-    -- Get controller ID
-    SELECT id INTO v_controller_id FROM controllers WHERE name = p_controller_name;
-    IF v_controller_id IS NULL THEN
-        RAISE EXCEPTION 'Controller not found: %', p_controller_name;
+    -- Get nation ID
+    SELECT id INTO v_nation_id FROM nations WHERE name = p_nation_name;
+    IF v_nation_id IS NULL THEN
+        RAISE EXCEPTION 'Nation not found: %', p_nation_name;
     END IF;
     
     -- Get snapshot ID
@@ -98,8 +98,8 @@ BEGIN
     v_name := COALESCE(p_geojson->'properties'->>'name', 'Territory');
     
     -- Insert territory
-    INSERT INTO territories (controller_id, snapshot_id, name, geometry, geojson, properties)
-    VALUES (v_controller_id, v_snapshot_id, v_name, v_geometry, p_geojson, p_geojson->'properties')
+    INSERT INTO territories (nation_id, snapshot_id, name, geometry, geojson, properties)
+    VALUES (v_nation_id, v_snapshot_id, v_name, v_geometry, p_geojson, p_geojson->'properties')
     RETURNING id INTO v_territory_id;
     
     RETURN v_territory_id;
@@ -108,20 +108,20 @@ $$ LANGUAGE plpgsql;
 
 -- View for easy GeoJSON export (sorted chronologically)
 CREATE OR REPLACE VIEW territories_geojson AS
-SELECT 
+SELECT
     t.id,
     ts.year,
     ts.era,
     ts.sort_year,
     ts.label as period_label,
-    c.display_name as controller_name,
-    c.color,
+    n.display_name as nation_name,
+    n.color,
     t.name,
     ST_AsGeoJSON(t.geometry)::jsonb as geometry,
     t.properties
 FROM territories t
 JOIN time_snapshots ts ON t.snapshot_id = ts.id
-JOIN controllers c ON t.controller_id = c.id
+JOIN nations n ON t.nation_id = n.id
 ORDER BY ts.sort_year;
 
 -- Cumulative territories (union of all territories up to each time period)
@@ -133,8 +133,8 @@ SELECT
     ts.era,
     ts.sort_year,
     ts.label,
-    (SELECT c.color FROM controllers c
-     JOIN territories t ON t.controller_id = c.id
+    (SELECT n.color FROM nations n
+     JOIN territories t ON t.nation_id = n.id
      WHERE t.snapshot_id = ts.id LIMIT 1) as color,
     ST_Multi(ST_Union(ST_MakeValid(t2.geometry)))::geometry(MultiPolygon, 4326) as geometry
 FROM time_snapshots ts

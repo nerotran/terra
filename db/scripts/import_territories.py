@@ -157,9 +157,9 @@ def import_file(filepath):
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
     
-    # Cache controllers
-    cur.execute("SELECT name, id FROM controllers")
-    controllers = dict(cur.fetchall())
+    # Cache nations
+    cur.execute("SELECT name, id FROM nations")
+    nations = dict(cur.fetchall())
     
     # Cache snapshots (will grow as we insert)
     cur.execute("SELECT year, era, id FROM time_snapshots")
@@ -194,19 +194,19 @@ def import_file(filepath):
         snapshot_id = snapshots[(year, era)]
         
         # Republic before 27 BC, Empire after
-        controller = 'rome_republic' if era == 'BC' and year > 27 else 'rome'
-        controller_id = controllers[controller]
+        nation = 'rome_republic' if era == 'BC' and year > 27 else 'rome'
+        nation_id = nations[nation]
         
         name = props.get('long_name', props.get('name', f'Roman Territory {year} {era}'))
         geometry = json.dumps(feat['geometry'])
         
         cur.execute("""
-            INSERT INTO territories (controller_id, snapshot_id, name, geometry, geojson, properties)
+            INSERT INTO territories (nation_id, snapshot_id, name, geometry, geojson, properties)
             VALUES (%s, %s, %s, ST_Multi(ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326))), %s, %s)
-            ON CONFLICT (controller_id, snapshot_id, name) 
+            ON CONFLICT (nation_id, snapshot_id, name)
             DO UPDATE SET geometry = EXCLUDED.geometry, geojson = EXCLUDED.geojson
             RETURNING id
-        """, (controller_id, snapshot_id, name, geometry, json.dumps(feat), json.dumps(props)))
+        """, (nation_id, snapshot_id, name, geometry, json.dumps(feat), json.dumps(props)))
         
         imported += 1
         print(f"  {year} {era}: {name}")

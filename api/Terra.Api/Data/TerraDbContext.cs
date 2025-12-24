@@ -7,7 +7,7 @@ public class TerraDbContext : DbContext
 {
     public TerraDbContext(DbContextOptions<TerraDbContext> options) : base(options) { }
 
-    public DbSet<Empire> Empires => Set<Empire>();
+    public DbSet<Nation> Nations => Set<Nation>();
     public DbSet<TimeSnapshot> TimeSnapshots => Set<TimeSnapshot>();
     public DbSet<Territory> Territories => Set<Territory>();
     public DbSet<CumulativeTerritory> CumulativeTerritories => Set<CumulativeTerritory>();
@@ -17,9 +17,9 @@ public class TerraDbContext : DbContext
     {
         modelBuilder.HasPostgresExtension("postgis");
 
-        modelBuilder.Entity<Empire>(entity =>
+        modelBuilder.Entity<Nation>(entity =>
         {
-            entity.ToTable("controllers");
+            entity.ToTable("nations");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name).HasColumnName("name");
@@ -45,15 +45,15 @@ public class TerraDbContext : DbContext
             entity.ToTable("territories");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.EmpireId).HasColumnName("controller_id");
+            entity.Property(e => e.NationId).HasColumnName("nation_id");
             entity.Property(e => e.SnapshotId).HasColumnName("snapshot_id");
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.Geometry).HasColumnName("geometry").HasColumnType("geometry(MultiPolygon, 4326)");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
 
-            entity.HasOne(e => e.Empire)
-                  .WithMany(c => c.Territories)
-                  .HasForeignKey(e => e.EmpireId);
+            entity.HasOne(e => e.Nation)
+                  .WithMany(n => n.Territories)
+                  .HasForeignKey(e => e.NationId);
 
             entity.HasOne(e => e.Snapshot)
                   .WithMany(s => s.Territories)

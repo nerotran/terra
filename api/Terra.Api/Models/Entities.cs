@@ -2,7 +2,7 @@ using NetTopologySuite.Geometries;
 
 namespace Terra.Api.Models;
 
-public class Empire
+public class Nation
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -28,13 +28,13 @@ public class TimeSnapshot
 public class Territory
 {
     public int Id { get; set; }
-    public int EmpireId { get; set; }
+    public int NationId { get; set; }
     public int SnapshotId { get; set; }
     public string? Name { get; set; }
     public MultiPolygon? Geometry { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    public Empire Empire { get; set; } = null!;
+    public Nation Nation { get; set; } = null!;
     public TimeSnapshot Snapshot { get; set; } = null!;
 }
 
