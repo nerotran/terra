@@ -3,15 +3,21 @@
 Import Roman Empire territories from TopoJSON/GeoJSON into PostgreSQL/PostGIS
 
 Usage:
-    python import_territories.py data/CombinedExtentLayers_v6.topojson
+    python import_territories.py                    # Auto-downloads Roman Empire data
+    python import_territories.py <file.topojson>   # Use custom file
 """
 
 import json
 import os
 import sys
 import re
+import urllib.request
 import psycopg2
 from pathlib import Path
+
+# Data source: https://github.com/siriusbontea/roman-empire (BSD license)
+ROMAN_EMPIRE_URL = os.getenv('ROMAN_EMPIRE_URL', 'https://raw.githubusercontent.com/siriusbontea/roman-empire/main/data/CombinedExtentLayers_v6.topojson')
+DEFAULT_DATA_PATH = Path(__file__).parent.parent.parent / "data" / "roman-empire.topojson"
 
 DB_CONFIG = {
     'host': os.getenv('POSTGRES_HOST', 'localhost'),
@@ -223,14 +229,30 @@ def import_file(filepath):
     print(f"\nDone: {imported} imported, {skipped} skipped")
 
 
+def download_roman_empire_data():
+    """Download Roman Empire TopoJSON data if not already present."""
+    if DEFAULT_DATA_PATH.exists():
+        print(f"Using cached data: {DEFAULT_DATA_PATH}")
+        return DEFAULT_DATA_PATH
+
+    print(f"Downloading Roman Empire data...")
+    print(f"  Source: {ROMAN_EMPIRE_URL}")
+
+    DEFAULT_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    urllib.request.urlretrieve(ROMAN_EMPIRE_URL, DEFAULT_DATA_PATH)
+    print(f"  Saved to: {DEFAULT_DATA_PATH}")
+
+    return DEFAULT_DATA_PATH
+
+
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Usage: python import_territories.py <file.topojson|geojson>")
-        sys.exit(1)
-    
-    path = Path(sys.argv[1])
-    if not path.exists():
-        print(f"Error: {path} not found")
-        sys.exit(1)
-    
+    if len(sys.argv) >= 2:
+        path = Path(sys.argv[1])
+        if not path.exists():
+            print(f"Error: {path} not found")
+            sys.exit(1)
+    else:
+        path = download_roman_empire_data()
+
     import_file(path)
