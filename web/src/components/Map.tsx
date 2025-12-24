@@ -86,7 +86,16 @@ export function Map({ territory }: MapProps) {
         .attr('d', path)
         .attr('fill', territory.color ?? '#8B0000')
         .attr('stroke', '#fff')
-        .attr('stroke-width', 0.5);
+        .attr('stroke-width', 0.5)
+        .on('mouseover', function (d, i) {
+          d3.select(this).transition()
+               .attr('opacity', '.7')
+        })
+        .on('mouseout', function (d, i) {
+          d3.select(this).transition()
+               .attr('opacity', '1')
+        })
+        ;
     }
 
   }, [territory, baseMap, dimensions]);
