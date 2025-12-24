@@ -11,6 +11,7 @@ public interface ITerritoryService
     Task<TerritoryDto?> GetTerritoryAsync(int snapshotId);
     Task<List<TerritoryDto>> GetAllTerritoriesAsync();
     Task<BaseMapDto> GetBaseMapAsync(string featureType = "land");
+    Task<NationDetailsDto?> GetNationDetailsAsync(int nationId, int snapshotId);
 }
 
 public class TerritoryService : ITerritoryService
@@ -65,7 +66,8 @@ public class TerritoryService : ITerritoryService
                 Id = t.Nation.Id,
                 Name = t.Nation.Name,
                 DisplayName = t.Nation.DisplayName,
-                Color = t.Nation.Color
+                Color = t.Nation.Color,
+                WikiUrl = t.Nation.WikiUrl
             },
             Geometry = t.Geometry != null
                 ? System.Text.Json.JsonSerializer.Deserialize<object>(_geoJsonWriter.Write(t.Geometry))
@@ -98,5 +100,50 @@ public class TerritoryService : ITerritoryService
                     : null
             }).ToList()
         };
+    }
+
+    public async Task<NationDetailsDto?> GetNationDetailsAsync(int nationId, int snapshotId)
+    {
+        var nation = await _db.Nations.FindAsync(nationId);
+        if (nation == null) return null;
+
+        // Get time-specific snapshot data (find closest snapshot <= requested)
+        var snapshot = await _db.NationSnapshots
+            .Include(ns => ns.Snapshot)
+            .Where(ns => ns.NationId == nationId && ns.Snapshot.Id <= snapshotId)
+            .OrderByDescending(ns => ns.Snapshot.SortYear)
+            .FirstOrDefaultAsync();
+
+        var dto = new NationDetailsDto
+        {
+            Id = nation.Id,
+            Name = nation.Name,
+            DisplayName = nation.DisplayName,
+            Color = nation.Color,
+            WikiUrl = nation.WikiUrl,
+            Founded = FormatYear(nation.FoundedYear, nation.FoundedEra),
+            Description = nation.Description
+        };
+
+        if (snapshot != null)
+        {
+            dto.RulerTitle = snapshot.RulerTitle;
+            dto.RulerName = snapshot.RulerName;
+            dto.RulerWikiUrl = snapshot.RulerWikiUrl;
+            dto.ReignStart = FormatYear(snapshot.ReignStartYear, snapshot.ReignStartEra);
+            dto.ReignEnd = FormatYear(snapshot.ReignEndYear, snapshot.ReignEndEra);
+            dto.Capital = snapshot.Capital;
+            dto.Language = snapshot.Language;
+            dto.Religion = snapshot.Religion;
+            dto.Population = snapshot.Population;
+        }
+
+        return dto;
+    }
+
+    private static string? FormatYear(int? year, string? era)
+    {
+        if (year == null) return null;
+        return $"{year} {era ?? "AD"}";
     }
 }

@@ -7,9 +7,11 @@ import { getBaseMap } from '../api/client';
 
 interface MapProps {
   territory: Territory | null;
+  onTerritoryClick?: (territory: Territory) => void;
+  onBackgroundClick?: () => void;
 }
 
-export function Map({ territory }: MapProps) {
+export function Map({ territory, onTerritoryClick, onBackgroundClick }: MapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [baseMap, setBaseMap] = useState<BaseMap | null>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -87,6 +89,7 @@ export function Map({ territory }: MapProps) {
         .attr('fill', territory.nation.color)
         .attr('stroke', '#fff')
         .attr('stroke-width', 0.5)
+        .attr('cursor', 'pointer')
         .on('mouseover', function () {
           d3.select(this).transition()
                .attr('opacity', '.7')
@@ -95,15 +98,23 @@ export function Map({ territory }: MapProps) {
           d3.select(this).transition()
                .attr('opacity', '1')
         })
-        ;
+        .on('click', function (event) {
+          event.stopPropagation();
+          onTerritoryClick?.(territory);
+        });
     }
 
-  }, [territory, baseMap, dimensions]);
+  }, [territory, baseMap, dimensions, onTerritoryClick]);
+
+  const handleBackgroundClick = () => {
+    onBackgroundClick?.();
+  };
 
   return (
     <svg
       ref={svgRef}
       style={{ width: '100%', height: '100%', background: '#b3d1ff' }}
+      onClick={handleBackgroundClick}
     />
   );
 }

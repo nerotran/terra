@@ -41,7 +41,8 @@ services:
       bash -c "
         pip install --quiet psycopg2-binary &&
         python import_basemap.py &&
-        python import_territories.py
+        python import_territories.py &&
+        python import_nation_snapshots.py
       "
     profiles:
       - import

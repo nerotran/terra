@@ -7,8 +7,35 @@ CREATE TABLE nations (
     name VARCHAR(100) NOT NULL UNIQUE,
     display_name VARCHAR(200),
     color VARCHAR(7) DEFAULT '#8B0000',  -- Default Roman red
+    wiki_url VARCHAR(500),
+    founded_year INTEGER,
+    founded_era VARCHAR(2) CHECK (founded_era IN ('BC', 'AD')),
+    description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Nation snapshots table (time-varying data like rulers, capitals)
+CREATE TABLE nation_snapshots (
+    id SERIAL PRIMARY KEY,
+    nation_id INTEGER NOT NULL REFERENCES nations(id),
+    snapshot_id INTEGER NOT NULL REFERENCES time_snapshots(id),
+    ruler_title VARCHAR(100),
+    ruler_name VARCHAR(200),
+    ruler_wiki_url VARCHAR(500),
+    reign_start_year INTEGER,
+    reign_start_era VARCHAR(2) CHECK (reign_start_era IN ('BC', 'AD')),
+    reign_end_year INTEGER,
+    reign_end_era VARCHAR(2) CHECK (reign_end_era IN ('BC', 'AD')),
+    capital VARCHAR(200),
+    language VARCHAR(200),
+    religion VARCHAR(200),
+    population VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(nation_id, snapshot_id)
+);
+
+CREATE INDEX idx_nation_snapshots_nation ON nation_snapshots(nation_id);
+CREATE INDEX idx_nation_snapshots_snapshot ON nation_snapshots(snapshot_id);
 
 -- Base map features (land, lakes, etc.)
 CREATE TABLE base_map (
@@ -54,9 +81,11 @@ CREATE INDEX idx_territories_nation ON territories(nation_id);
 CREATE INDEX idx_snapshots_sort_year ON time_snapshots(sort_year);
 
 -- Seed data: Roman nations
-INSERT INTO nations (name, display_name, color) VALUES
-    ('rome', 'Roman Empire', '#8B0000'),
-    ('rome_republic', 'Roman Republic', '#CD5C5C');
+INSERT INTO nations (name, display_name, color, wiki_url, founded_year, founded_era, description) VALUES
+    ('rome', 'Roman Empire', '#8B0000', 'https://en.wikipedia.org/wiki/Roman_Empire', 27, 'BC',
+     'The Roman Empire was one of the largest and most influential civilizations in world history, known for its military prowess, engineering achievements, and lasting cultural legacy.'),
+    ('rome_republic', 'Roman Republic', '#CD5C5C', 'https://en.wikipedia.org/wiki/Roman_Republic', 509, 'BC',
+     'The Roman Republic was the era of classical Roman civilization beginning with the overthrow of the Roman Kingdom and ending with the establishment of the Roman Empire.');
 
 -- Time snapshots will be created dynamically during import
 
