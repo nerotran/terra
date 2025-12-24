@@ -14,29 +14,6 @@ CREATE TABLE nations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Nation snapshots table (time-varying data like rulers, capitals)
-CREATE TABLE nation_snapshots (
-    id SERIAL PRIMARY KEY,
-    nation_id INTEGER NOT NULL REFERENCES nations(id),
-    snapshot_id INTEGER NOT NULL REFERENCES time_snapshots(id),
-    ruler_title VARCHAR(100),
-    ruler_name VARCHAR(200),
-    ruler_wiki_url VARCHAR(500),
-    reign_start_year INTEGER,
-    reign_start_era VARCHAR(2) CHECK (reign_start_era IN ('BC', 'AD')),
-    reign_end_year INTEGER,
-    reign_end_era VARCHAR(2) CHECK (reign_end_era IN ('BC', 'AD')),
-    capital VARCHAR(200),
-    language VARCHAR(200),
-    religion VARCHAR(200),
-    population VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(nation_id, snapshot_id)
-);
-
-CREATE INDEX idx_nation_snapshots_nation ON nation_snapshots(nation_id);
-CREATE INDEX idx_nation_snapshots_snapshot ON nation_snapshots(snapshot_id);
-
 -- Base map features (land, lakes, etc.)
 CREATE TABLE base_map (
     id SERIAL PRIMARY KEY,
@@ -60,6 +37,29 @@ CREATE TABLE time_snapshots (
     description TEXT,
     UNIQUE(year, era)
 );
+
+-- Nation snapshots table (time-varying data like rulers, capitals)
+CREATE TABLE nation_snapshots (
+    id SERIAL PRIMARY KEY,
+    nation_id INTEGER NOT NULL REFERENCES nations(id),
+    snapshot_id INTEGER NOT NULL REFERENCES time_snapshots(id),
+    ruler_title VARCHAR(100),
+    ruler_name VARCHAR(200),
+    ruler_wiki_url VARCHAR(500),
+    reign_start_year INTEGER,
+    reign_start_era VARCHAR(2) CHECK (reign_start_era IN ('BC', 'AD')),
+    reign_end_year INTEGER,
+    reign_end_era VARCHAR(2) CHECK (reign_end_era IN ('BC', 'AD')),
+    capital VARCHAR(200),
+    language VARCHAR(200),
+    religion VARCHAR(200),
+    population VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(nation_id, snapshot_id)
+);
+
+CREATE INDEX idx_nation_snapshots_nation ON nation_snapshots(nation_id);
+CREATE INDEX idx_nation_snapshots_snapshot ON nation_snapshots(snapshot_id);
 
 -- Territories table with GeoJSON stored as JSONB
 CREATE TABLE territories (
