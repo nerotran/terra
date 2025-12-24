@@ -10,7 +10,7 @@ interface NationPanelProps {
   onClose: () => void;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export function NationPanel({ nation, snapshotId, year, era, isOpen, onClose }: NationPanelProps) {
   const [details, setDetails] = useState<NationDetails | null>(null);
@@ -25,7 +25,7 @@ export function NationPanel({ nation, snapshotId, year, era, isOpen, onClose }: 
     const fetchDetails = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/api/nations/${nation.id}/snapshot/${snapshotId}`);
+        const res = await fetch(`${API_BASE}/nations/${nation.id}/snapshot/${snapshotId}`);
         if (res.ok) {
           setDetails(await res.json());
         }
@@ -104,38 +104,44 @@ export function NationPanel({ nation, snapshotId, year, era, isOpen, onClose }: 
 
         {/* Info Grid */}
         <div style={styles.section}>
-          <div style={styles.infoGrid}>
-            {details?.founded && (
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>Founded</span>
-                <span style={styles.infoValue}>{details.founded}</span>
-              </div>
-            )}
-            {details?.capital && (
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>Capital</span>
-                <span style={styles.infoValue}>{details.capital}</span>
-              </div>
-            )}
-            {details?.language && (
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>Language</span>
-                <span style={styles.infoValue}>{details.language}</span>
-              </div>
-            )}
-            {details?.religion && (
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>Religion</span>
-                <span style={styles.infoValue}>{details.religion}</span>
-              </div>
-            )}
-            {details?.population && (
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>Population</span>
-                <span style={styles.infoValue}>{details.population}</span>
-              </div>
-            )}
-          </div>
+          {loading ? (
+            <span style={styles.loadingText}>Loading details...</span>
+          ) : details ? (
+            <div style={styles.infoGrid}>
+              {details.founded && (
+                <div style={styles.infoItem}>
+                  <span style={styles.infoLabel}>Founded</span>
+                  <span style={styles.infoValue}>{details.founded}</span>
+                </div>
+              )}
+              {details.capital && (
+                <div style={styles.infoItem}>
+                  <span style={styles.infoLabel}>Capital</span>
+                  <span style={styles.infoValue}>{details.capital}</span>
+                </div>
+              )}
+              {details.language && (
+                <div style={styles.infoItem}>
+                  <span style={styles.infoLabel}>Language</span>
+                  <span style={styles.infoValue}>{details.language}</span>
+                </div>
+              )}
+              {details.religion && (
+                <div style={styles.infoItem}>
+                  <span style={styles.infoLabel}>Religion</span>
+                  <span style={styles.infoValue}>{details.religion}</span>
+                </div>
+              )}
+              {details.population && (
+                <div style={styles.infoItem}>
+                  <span style={styles.infoLabel}>Population</span>
+                  <span style={styles.infoValue}>{details.population}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <span style={styles.loadingText}>Could not load details</span>
+          )}
         </div>
 
         {/* Description */}
@@ -144,13 +150,6 @@ export function NationPanel({ nation, snapshotId, year, era, isOpen, onClose }: 
             <div style={styles.descriptionContainer}>
               <p style={styles.description}>{details.description}</p>
             </div>
-          </div>
-        )}
-
-        {/* Loading indicator */}
-        {loading && (
-          <div style={styles.section}>
-            <span style={styles.loadingText}>Loading...</span>
           </div>
         )}
 

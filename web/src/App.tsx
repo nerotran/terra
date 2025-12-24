@@ -65,6 +65,7 @@ function App() {
         snapshots={territories}
         currentIndex={currentIndex}
         onChange={setCurrentIndex}
+        panelOpen={isPanelOpen}
       />
       <NationPanel
         nation={currentTerritory?.nation || null}

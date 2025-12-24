@@ -4,9 +4,12 @@ interface TimeSliderProps {
   snapshots: TimeSnapshot[];
   currentIndex: number;
   onChange: (index: number) => void;
+  panelOpen?: boolean;
 }
 
-export function TimeSlider({ snapshots, currentIndex, onChange }: TimeSliderProps) {
+const PANEL_WIDTH = 360;
+
+export function TimeSlider({ snapshots, currentIndex, onChange, panelOpen = false }: TimeSliderProps) {
   if (snapshots.length === 0) {
     return (
       <div style={{ padding: '1rem', background: '#16213e', color: '#fff', textAlign: 'center' }}>
@@ -22,7 +25,13 @@ export function TimeSlider({ snapshots, currentIndex, onChange }: TimeSliderProp
   };
 
   return (
-    <div style={{ padding: '1rem', background: '#16213e', color: '#fff' }}>
+    <div style={{
+      padding: '1rem',
+      background: '#16213e',
+      color: '#fff',
+      marginRight: panelOpen ? PANEL_WIDTH : 0,
+      transition: 'margin-right 0.3s ease-in-out',
+    }}>
       <input
         type="range"
         min={0}
