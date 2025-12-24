@@ -20,6 +20,21 @@ public class SnapshotDto
     public string? Label { get; set; }
 }
 
+public class NationDto
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("display_name")]
+    public string? DisplayName { get; set; }
+
+    [JsonPropertyName("color")]
+    public string Color { get; set; } = "#8B0000";
+}
+
 public class TerritoryDto
 {
     [JsonPropertyName("snapshot_id")]
@@ -37,8 +52,8 @@ public class TerritoryDto
     [JsonPropertyName("label")]
     public string? Label { get; set; }
 
-    [JsonPropertyName("color")]
-    public string? Color { get; set; }
+    [JsonPropertyName("nation")]
+    public NationDto Nation { get; set; } = null!;
 
     [JsonPropertyName("geometry")]
     public object? Geometry { get; set; } // GeoJSON object

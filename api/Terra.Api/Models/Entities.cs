@@ -45,8 +45,10 @@ public class CumulativeTerritory
     public string Era { get; set; } = string.Empty;
     public int SortYear { get; set; }
     public string? Label { get; set; }
-    public string? Color { get; set; }
+    public int NationId { get; set; }
     public MultiPolygon? Geometry { get; set; }
+
+    public Nation Nation { get; set; } = null!;
 }
 
 public class BaseMapFeature

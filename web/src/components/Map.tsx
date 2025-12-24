@@ -84,7 +84,7 @@ export function Map({ territory }: MapProps) {
       svg.append('path')
         .datum(rewound)
         .attr('d', path)
-        .attr('fill', territory.color ?? '#8B0000')
+        .attr('fill', territory.nation.color)
         .attr('stroke', '#fff')
         .attr('stroke-width', 0.5)
         .on('mouseover', function () {

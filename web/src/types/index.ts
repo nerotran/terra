@@ -6,8 +6,15 @@ export interface TimeSnapshot {
   label: string | null;
 }
 
+export interface Nation {
+  id: number;
+  name: string;
+  display_name: string | null;
+  color: string;
+}
+
 export interface Territory extends TimeSnapshot {
-  color: string | null;
+  nation: Nation;
   geometry: object | null;
 }
 

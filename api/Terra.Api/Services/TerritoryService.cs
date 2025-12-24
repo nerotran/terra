@@ -42,21 +42,33 @@ public class TerritoryService : ITerritoryService
     public async Task<TerritoryDto?> GetTerritoryAsync(int snapshotId)
     {
         var territory = await _db.CumulativeTerritories
+            .Include(t => t.Nation)
             .Where(t => t.SnapshotId == snapshotId)
             .FirstOrDefaultAsync();
 
         if (territory == null) return null;
 
+        return MapToDto(territory);
+    }
+
+    private TerritoryDto MapToDto(CumulativeTerritory t)
+    {
         return new TerritoryDto
         {
-            SnapshotId = territory.SnapshotId,
-            Year = territory.Year,
-            Era = territory.Era,
-            SortYear = territory.SortYear,
-            Label = territory.Label,
-            Color = territory.Color,
-            Geometry = territory.Geometry != null
-                ? System.Text.Json.JsonSerializer.Deserialize<object>(_geoJsonWriter.Write(territory.Geometry))
+            SnapshotId = t.SnapshotId,
+            Year = t.Year,
+            Era = t.Era,
+            SortYear = t.SortYear,
+            Label = t.Label,
+            Nation = new NationDto
+            {
+                Id = t.Nation.Id,
+                Name = t.Nation.Name,
+                DisplayName = t.Nation.DisplayName,
+                Color = t.Nation.Color
+            },
+            Geometry = t.Geometry != null
+                ? System.Text.Json.JsonSerializer.Deserialize<object>(_geoJsonWriter.Write(t.Geometry))
                 : null
         };
     }
@@ -64,21 +76,11 @@ public class TerritoryService : ITerritoryService
     public async Task<List<TerritoryDto>> GetAllTerritoriesAsync()
     {
         var territories = await _db.CumulativeTerritories
+            .Include(t => t.Nation)
             .OrderBy(t => t.SortYear)
             .ToListAsync();
 
-        return territories.Select(t => new TerritoryDto
-        {
-            SnapshotId = t.SnapshotId,
-            Year = t.Year,
-            Era = t.Era,
-            SortYear = t.SortYear,
-            Label = t.Label,
-            Color = t.Color,
-            Geometry = t.Geometry != null
-                ? System.Text.Json.JsonSerializer.Deserialize<object>(_geoJsonWriter.Write(t.Geometry))
-                : null
-        }).ToList();
+        return territories.Select(MapToDto).ToList();
     }
 
     public async Task<BaseMapDto> GetBaseMapAsync(string featureType = "land")

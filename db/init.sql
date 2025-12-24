@@ -133,9 +133,8 @@ SELECT
     ts.era,
     ts.sort_year,
     ts.label,
-    (SELECT n.color FROM nations n
-     JOIN territories t ON t.nation_id = n.id
-     WHERE t.snapshot_id = ts.id LIMIT 1) as color,
+    (SELECT t.nation_id FROM territories t
+     WHERE t.snapshot_id = ts.id LIMIT 1) as nation_id,
     ST_Multi(ST_Union(ST_MakeValid(t2.geometry)))::geometry(MultiPolygon, 4326) as geometry
 FROM time_snapshots ts
 JOIN time_snapshots ts2 ON ts2.sort_year <= ts.sort_year
@@ -156,7 +155,7 @@ SELECT
     era,
     sort_year,
     label,
-    color,
+    nation_id,
     ST_AsGeoJSON(geometry)::jsonb as geometry
 FROM cumulative_territories
 ORDER BY sort_year;

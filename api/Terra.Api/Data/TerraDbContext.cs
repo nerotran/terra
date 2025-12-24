@@ -69,8 +69,12 @@ public class TerraDbContext : DbContext
             entity.Property(e => e.Era).HasColumnName("era");
             entity.Property(e => e.SortYear).HasColumnName("sort_year");
             entity.Property(e => e.Label).HasColumnName("label");
-            entity.Property(e => e.Color).HasColumnName("color");
+            entity.Property(e => e.NationId).HasColumnName("nation_id");
             entity.Property(e => e.Geometry).HasColumnName("geometry").HasColumnType("geometry(MultiPolygon, 4326)");
+
+            entity.HasOne(e => e.Nation)
+                  .WithMany()
+                  .HasForeignKey(e => e.NationId);
         });
 
         modelBuilder.Entity<BaseMapFeature>(entity =>
