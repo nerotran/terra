@@ -21,5 +21,30 @@ services:
       timeout: 5s
       retries: 5
 
+  importer:
+    image: python:3.12-slim
+    container_name: terra-importer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-terra}
+      POSTGRES_USER: ${POSTGRES_USER:-terra}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-terra_dev}
+    volumes:
+      - ./db/scripts:/scripts
+      - ./data:/data
+    working_dir: /scripts
+    command: >
+      bash -c "
+        pip install --quiet psycopg2-binary &&
+        python import_basemap.py &&
+        python import_territories.py
+      "
+    profiles:
+      - import
+
 volumes:
   terra_data:
