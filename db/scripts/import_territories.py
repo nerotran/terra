@@ -7,17 +7,18 @@ Usage:
 """
 
 import json
+import os
 import sys
 import re
 import psycopg2
 from pathlib import Path
 
 DB_CONFIG = {
-    'host': 'localhost',
-    'port': 5432,
-    'database': 'terra',
-    'user': 'terra',
-    'password': 'terra_dev'
+    'host': os.getenv('POSTGRES_HOST', 'localhost'),
+    'port': int(os.getenv('POSTGRES_PORT', '5432')),
+    'database': os.getenv('POSTGRES_DB', 'terra'),
+    'user': os.getenv('POSTGRES_USER', 'terra'),
+    'password': os.getenv('POSTGRES_PASSWORD', 'terra_dev')
 }
 
 
