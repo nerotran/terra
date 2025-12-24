@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import rewind from '@turf/rewind';
 import type { Feature, Geometry } from 'geojson';
@@ -87,11 +87,11 @@ export function Map({ territory }: MapProps) {
         .attr('fill', territory.color ?? '#8B0000')
         .attr('stroke', '#fff')
         .attr('stroke-width', 0.5)
-        .on('mouseover', function (d, i) {
+        .on('mouseover', function () {
           d3.select(this).transition()
                .attr('opacity', '.7')
         })
-        .on('mouseout', function (d, i) {
+        .on('mouseout', function () {
           d3.select(this).transition()
                .attr('opacity', '1')
         })
