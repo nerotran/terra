@@ -2,7 +2,9 @@
 
 Interactive map showing territorial changes through history. Drag a time slider, watch borders evolve.
 
-Currently features the Roman Republic and Empire (500 BC - 117 AD) with dynamic ruler information. Click on a territory to see details about the nation and its current ruler for that time period.
+Currently features the Roman Republic and Empire (500 BC - 200 AD) with dynamic ruler information. Click on a territory to see details about the nation and its current ruler for that time period.
+
+**Vision:** Expand to visualize all countries and civilizations throughout human history.
 
 ## Quick Start
 
@@ -16,10 +18,10 @@ cp .env.example .env
 docker-compose up -d
 docker compose --profile import up
 
-# Start API
+# Start API (http://localhost:5025)
 cd api/Terra.Api && dotnet run
 
-# Start frontend (in another terminal)
+# Start frontend (http://localhost:5173)
 cd web && npm install && npm run dev
 ```
 
@@ -60,6 +62,8 @@ cd web && npm install && npm run dev
 terra/
 ├── docker-compose.yml      # PostgreSQL + PostGIS + Importer
 ├── terra.sln               # .NET solution file
+├── docs/
+│   └── terra-geodata-builder-design.md  # Future geodata service design
 ├── db/
 │   ├── init.sql            # Database schema
 │   └── scripts/
@@ -84,7 +88,7 @@ terra/
 
 | Data | Source | License |
 |------|--------|---------|
-| Roman territories | [siriusbontea/roman-empire](https://github.com/siriusbontea/roman-empire) | BSD |
+| Roman territories (13 snapshots) | [siriusbontea/roman-empire](https://github.com/siriusbontea/roman-empire) | BSD |
 | Land geography | [Natural Earth](https://www.naturalearthdata.com/) | Public Domain |
 | Rulers | [Wikidata](https://www.wikidata.org/) (consuls Q40779, emperors Q842606) | CC0 |
 
@@ -96,6 +100,21 @@ terra/
 | `GET /api/snapshots` | All time periods |
 | `GET /api/nations/{id}/snapshot/{snapshotId}` | Nation details with ruler |
 | `GET /api/basemap` | Land geography |
+
+## Future Development
+
+### Terra Geodata Builder
+
+A separate service is planned to aggregate territory data from multiple sources, enabling expansion to all historical nations. See `docs/terra-geodata-builder-design.md` for the full design.
+
+**Target sources:**
+- [Historical Basemaps](https://github.com/aourednik/historical-basemaps) - World boundaries 3000 BC - present
+- [Project MERCURY](https://projectmercury.eu/datasets/) - Roman provinces
+- [CShapes](https://icr.ethz.ch/data/cshapes/) - Modern states post-1886
+
+### Year-by-Year Timeline
+
+Current implementation uses 13 discrete snapshots. Future work will implement event-based territorial changes with `start_year`/`end_year` for smooth year-by-year transitions.
 
 ## Development
 
@@ -109,6 +128,12 @@ cd web && npm run build
 # Lint frontend
 cd web && npm run lint
 ```
+
+## Documentation
+
+- `TERRA_PROJECT_SUMMARY.md` - Detailed project documentation
+- `CLAUDE.md` - Claude Code guidance for this repo
+- `docs/terra-geodata-builder-design.md` - Geodata service design
 
 ## License
 
