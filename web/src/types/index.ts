@@ -20,11 +20,13 @@ export interface NationDetails {
   display_name: string | null;
   color: string;
   wiki_url: string | null;
+  flag_url: string | null;
   founded: string | null;
   description: string | null;
   ruler_title: string | null;
   ruler_name: string | null;
   ruler_wiki_url: string | null;
+  ruler_portrait_url: string | null;
   reign_start: string | null;
   reign_end: string | null;
   capital: string | null;

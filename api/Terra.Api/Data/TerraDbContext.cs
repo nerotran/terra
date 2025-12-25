@@ -27,6 +27,7 @@ public class TerraDbContext : DbContext
             entity.Property(e => e.DisplayName).HasColumnName("display_name");
             entity.Property(e => e.Color).HasColumnName("color");
             entity.Property(e => e.WikiUrl).HasColumnName("wiki_url");
+            entity.Property(e => e.FlagUrl).HasColumnName("flag_url");
             entity.Property(e => e.FoundedYear).HasColumnName("founded_year");
             entity.Property(e => e.FoundedEra).HasColumnName("founded_era");
             entity.Property(e => e.Description).HasColumnName("description");
@@ -43,6 +44,7 @@ public class TerraDbContext : DbContext
             entity.Property(e => e.RulerTitle).HasColumnName("ruler_title");
             entity.Property(e => e.RulerName).HasColumnName("ruler_name");
             entity.Property(e => e.RulerWikiUrl).HasColumnName("ruler_wiki_url");
+            entity.Property(e => e.RulerPortraitUrl).HasColumnName("ruler_portrait_url");
             entity.Property(e => e.ReignStartYear).HasColumnName("reign_start_year");
             entity.Property(e => e.ReignStartEra).HasColumnName("reign_start_era");
             entity.Property(e => e.ReignEndYear).HasColumnName("reign_end_year");

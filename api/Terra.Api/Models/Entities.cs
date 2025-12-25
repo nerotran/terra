@@ -9,6 +9,7 @@ public class Nation
     public string? DisplayName { get; set; }
     public string Color { get; set; } = "#8B0000";
     public string? WikiUrl { get; set; }
+    public string? FlagUrl { get; set; }
     public int? FoundedYear { get; set; }
     public string? FoundedEra { get; set; }
     public string? Description { get; set; }
@@ -26,6 +27,7 @@ public class NationSnapshot
     public string? RulerTitle { get; set; }
     public string? RulerName { get; set; }
     public string? RulerWikiUrl { get; set; }
+    public string? RulerPortraitUrl { get; set; }
     public int? ReignStartYear { get; set; }
     public string? ReignStartEra { get; set; }
     public int? ReignEndYear { get; set; }

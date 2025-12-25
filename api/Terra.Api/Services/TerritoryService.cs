@@ -107,10 +107,14 @@ public class TerritoryService : ITerritoryService
         var nation = await _db.Nations.FindAsync(nationId);
         if (nation == null) return null;
 
-        // Get time-specific snapshot data (find closest snapshot <= requested)
+        // Get the requested snapshot to find its sort_year
+        var requestedSnapshot = await _db.TimeSnapshots.FindAsync(snapshotId);
+        if (requestedSnapshot == null) return null;
+
+        // Get time-specific snapshot data (find closest snapshot <= requested by sort_year)
         var snapshot = await _db.NationSnapshots
             .Include(ns => ns.Snapshot)
-            .Where(ns => ns.NationId == nationId && ns.Snapshot.Id <= snapshotId)
+            .Where(ns => ns.NationId == nationId && ns.Snapshot.SortYear <= requestedSnapshot.SortYear)
             .OrderByDescending(ns => ns.Snapshot.SortYear)
             .FirstOrDefaultAsync();
 
@@ -121,6 +125,7 @@ public class TerritoryService : ITerritoryService
             DisplayName = nation.DisplayName,
             Color = nation.Color,
             WikiUrl = nation.WikiUrl,
+            FlagUrl = nation.FlagUrl,
             Founded = FormatYear(nation.FoundedYear, nation.FoundedEra),
             Description = nation.Description
         };
@@ -130,6 +135,7 @@ public class TerritoryService : ITerritoryService
             dto.RulerTitle = snapshot.RulerTitle;
             dto.RulerName = snapshot.RulerName;
             dto.RulerWikiUrl = snapshot.RulerWikiUrl;
+            dto.RulerPortraitUrl = snapshot.RulerPortraitUrl;
             dto.ReignStart = FormatYear(snapshot.ReignStartYear, snapshot.ReignStartEra);
             dto.ReignEnd = FormatYear(snapshot.ReignEndYear, snapshot.ReignEndEra);
             dto.Capital = snapshot.Capital;

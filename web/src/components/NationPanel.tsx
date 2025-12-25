@@ -76,9 +76,17 @@ export function NationPanel({ nation, snapshotId, year, era, isOpen, onClose }: 
         {details?.ruler_name && (
           <div style={styles.section}>
             <div style={styles.rulerContainer}>
-              <div style={styles.portraitPlaceholder}>
-                <span style={styles.portraitIcon}>👤</span>
-              </div>
+              {details.ruler_portrait_url ? (
+                <img
+                  src={`${API_BASE.replace('/api', '')}${details.ruler_portrait_url}`}
+                  alt={details.ruler_name}
+                  style={styles.portrait}
+                />
+              ) : (
+                <div style={styles.portraitPlaceholder}>
+                  <span style={styles.portraitIcon}>👤</span>
+                </div>
+              )}
               <div style={styles.rulerInfo}>
                 {details.ruler_title && (
                   <span style={styles.rulerTitle}>{details.ruler_title}</span>
@@ -238,6 +246,13 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+  },
+  portrait: {
+    width: '72px',
+    height: '72px',
+    borderRadius: '50%',
+    objectFit: 'cover',
     flexShrink: 0,
   },
   portraitIcon: {

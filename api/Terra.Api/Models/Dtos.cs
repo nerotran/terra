@@ -55,6 +55,9 @@ public class NationDetailsDto
     [JsonPropertyName("wiki_url")]
     public string? WikiUrl { get; set; }
 
+    [JsonPropertyName("flag_url")]
+    public string? FlagUrl { get; set; }
+
     [JsonPropertyName("founded")]
     public string? Founded { get; set; }
 
@@ -70,6 +73,9 @@ public class NationDetailsDto
 
     [JsonPropertyName("ruler_wiki_url")]
     public string? RulerWikiUrl { get; set; }
+
+    [JsonPropertyName("ruler_portrait_url")]
+    public string? RulerPortraitUrl { get; set; }
 
     [JsonPropertyName("reign_start")]
     public string? ReignStart { get; set; }

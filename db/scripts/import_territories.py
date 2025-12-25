@@ -13,6 +13,7 @@ import sys
 import re
 import urllib.request
 import psycopg2
+from psycopg2.extras import execute_values
 from pathlib import Path
 
 # Data source: https://github.com/siriusbontea/roman-empire (BSD license)
@@ -159,74 +160,93 @@ def import_file(filepath):
     """Import GeoJSON or TopoJSON file."""
     features = load_file(filepath)
     print(f"Found {len(features)} features")
-    
+
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
-    
+
     # Cache nations
     cur.execute("SELECT name, id FROM nations")
     nations = dict(cur.fetchall())
-    
+
     # Cache snapshots (will grow as we insert)
     cur.execute("SELECT year, era, id FROM time_snapshots")
     snapshots = {(r[0], r[1]): r[2] for r in cur.fetchall()}
-    
-    imported, skipped = 0, 0
-    
+
+    # First pass: create any missing snapshots
+    new_snapshots = []
     for feat in features:
         props = feat.get('properties', {})
-        
         parsed = parse_year_string(props)
         if not parsed:
-            layer = props.get('_layer', props.get('year_string', 'unknown'))
-            print(f"  Skip: {layer} (unknown period)")
-            skipped += 1
             continue
-        
         year, era = parsed
-        
-        # Create snapshot if it doesn't exist
         if (year, era) not in snapshots:
             label = props.get('title_header', props.get('long_name', f'{year} {era}'))
+            new_snapshots.append((year, era, label, props.get('long_name', '')))
+            snapshots[(year, era)] = None  # Placeholder
+
+    # Batch insert new snapshots
+    if new_snapshots:
+        for year, era, label, desc in new_snapshots:
             cur.execute("""
                 INSERT INTO time_snapshots (year, era, label, description)
                 VALUES (%s, %s, %s, %s)
+                ON CONFLICT (year, era) DO NOTHING
                 RETURNING id
-            """, (year, era, label, props.get('long_name', '')))
-            snapshot_id = cur.fetchone()[0]
-            snapshots[(year, era)] = snapshot_id
-            print(f"  Created snapshot: {year} {era}")
-        
+            """, (year, era, label, desc))
+            result = cur.fetchone()
+            if result:
+                snapshots[(year, era)] = result[0]
+                print(f"  Created snapshot: {year} {era}")
+
+        # Refresh cache for any that existed
+        cur.execute("SELECT year, era, id FROM time_snapshots")
+        snapshots = {(r[0], r[1]): r[2] for r in cur.fetchall()}
+
+    # Second pass: prepare territory records
+    records = []
+    skipped = 0
+
+    for feat in features:
+        props = feat.get('properties', {})
+        parsed = parse_year_string(props)
+        if not parsed:
+            layer = props.get('_layer', props.get('year_string', 'unknown'))
+            skipped += 1
+            continue
+
+        year, era = parsed
         snapshot_id = snapshots[(year, era)]
-        
+
         # Republic before 27 BC, Empire after
         nation = 'rome_republic' if era == 'BC' and year > 27 else 'rome'
         nation_id = nations[nation]
-        
+
         name = props.get('long_name', props.get('name', f'Roman Territory {year} {era}'))
         geometry = json.dumps(feat['geometry'])
-        
-        cur.execute("""
+
+        records.append((nation_id, snapshot_id, name, geometry, json.dumps(feat), json.dumps(props)))
+
+    # Batch insert territories using executemany
+    if records:
+        print(f"Inserting {len(records)} territories...")
+        cur.executemany("""
             INSERT INTO territories (nation_id, snapshot_id, name, geometry, geojson, properties)
             VALUES (%s, %s, %s, ST_Multi(ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326))), %s, %s)
             ON CONFLICT (nation_id, snapshot_id, name)
             DO UPDATE SET geometry = EXCLUDED.geometry, geojson = EXCLUDED.geojson
-            RETURNING id
-        """, (nation_id, snapshot_id, name, geometry, json.dumps(feat), json.dumps(props)))
-        
-        imported += 1
-        print(f"  {year} {era}: {name}")
-    
+        """, records)
+
     conn.commit()
-    
+
     # Refresh cumulative territories view
-    print("\nRefreshing cumulative territories view...")
+    print("Refreshing cumulative territories view...")
     cur.execute("REFRESH MATERIALIZED VIEW cumulative_territories;")
     conn.commit()
-    
+
     conn.close()
-    
-    print(f"\nDone: {imported} imported, {skipped} skipped")
+
+    print(f"\nDone: {len(records)} imported, {skipped} skipped")
 
 
 def download_roman_empire_data():

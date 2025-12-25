@@ -16,7 +16,9 @@ The current implementation starts with the Roman Empire, but the architecture is
 - **Database:** PostgreSQL 16 + PostGIS 3.4 (Docker)
 - **API:** .NET Core 8 Web API
 - **Frontend:** React + TypeScript + Vite + D3.js
-- **Data Source:** siriusbontea/roman-empire repository (BSD license)
+- **Data Sources:**
+  - Territories: siriusbontea/roman-empire repository (BSD license)
+  - Rulers: Wikidata SPARQL API (consuls Q40779, emperors Q842606)
 
 ## Repo Structure
 ```
@@ -41,7 +43,9 @@ terra/
 │   ├── components/ (Map.tsx, TimeSlider.tsx, NationPanel.tsx)
 │   ├── api/client.ts
 │   └── types/index.ts
-└── data/ (not committed, download separately)
+├── logs/ (gitignored, import script logs)
+└── data/ (gitignored)
+    └── assets/portraits/ (downloaded ruler images)
 ```
 
 ## Database Schema
@@ -124,25 +128,69 @@ Data changes dynamically based on selected date.
 - ✅ `nation_snapshots` table for time-varying data (rulers, capitals, etc.)
 
 **Data Import:**
-- ✅ `import_nation_snapshots.py` - Queries Wikidata for Roman emperors, falls back to hardcoded data
+- ✅ `import_nation_snapshots.py` - Queries Wikidata for Roman consuls (Republic) and emperors (Empire)
 - ✅ Added to Docker importer service
+- ✅ Performance optimized for large-scale imports (batch inserts, binary search, buffered logging)
 
 **API Endpoint:**
 - `GET /api/nations/{nationId}/snapshot/{snapshotId}` - Returns nation + current ruler snapshot
 
 ## Open Issues
 
-**Asset Storage (flags, portraits) - Future:**
-- Store locally, not Wikimedia hotlinks
-- Workflow: Download during import to `/data/assets/`, store local path in DB
-- Fallback: Use placeholder silhouettes for missing portraits
+### Asset Storage
 
-**Nations for future:** Adding more nations (Carthage, Ptolemaic Egypt, etc.) is a separate issue
+**Portraits (working):**
+- Uses MediaWiki API to get downloadable thumbnail URLs (avoids 403 Forbidden errors from direct Wikimedia URLs)
+- Downloaded to `data/assets/portraits/` during import
+- Cached by ruler name to avoid duplicate downloads
+
+**Flags (disabled):**
+Historical nations like the Roman Republic/Empire don't have traditional "flags" in the modern sense, which creates challenges:
+
+| Approach Tried | Result |
+|----------------|--------|
+| Wikidata P41 (flag image) | Roman entities don't have P41 property |
+| DBpedia flag properties | Returns wrong/unrelated images |
+| Wikipedia pageimages API | Returns modern Flag of Italy or map images |
+| Keyword search (vexillum, banner, aquila, SPQR) | Inconsistent results, often wrong images |
+
+The fundamental issue is that ancient civilizations used symbols (eagles, standards, vexilla) rather than flags, and these aren't consistently tagged in structured data sources. A better approach might be:
+- Curated asset library for historical nations
+- Manual mapping of nation → symbol image
+- Or accept that some nations won't have flag/emblem images
+
+Code for flag fetching exists in `import_nation_snapshots.py` (`get_flag_from_wikipedia_url()`) but is disabled in `main()`.
+
+### Nations for future
+Adding more nations (Carthage, Ptolemaic Egypt, Seleucid Empire, etc.) is a separate issue. The import scripts are designed to scale.
+
+## Import Scripts Performance
+
+All import scripts are optimized to scale for many nations:
+
+### import_nation_snapshots.py
+| Optimization | Description |
+|--------------|-------------|
+| Wikidata SPARQL | Fetches consuls (Q40779) and emperors (Q842606) in bulk queries |
+| Binary search | O(log n) ruler lookup using `bisect` instead of O(n) linear scan |
+| Batch inserts | `execute_values()` for single DB round-trip |
+| Buffered logging | Collects log messages, writes once at end |
+| Portrait caching | Avoids re-downloading same ruler's portrait |
+
+### import_territories.py & import_basemap.py
+| Optimization | Description |
+|--------------|-------------|
+| Batch inserts | `executemany()` instead of individual INSERTs |
+| Two-pass import | Collect records first, then batch insert |
+
+### Logs
+Import logs are written to `logs/` directory (gitignored).
 
 ## Future Scaling Notes
 - Data files kept separate (auto-downloaded by import scripts, cached locally, not committed)
 - `data/README.md` documents data sources
 - Goal: One contiguous world timeline, not separate scenarios
+- Import scripts designed for bulk imports of many nations
 
 ## Key Technical Decisions
 1. PostGIS for spatial queries (faster than JS-based geometry operations)

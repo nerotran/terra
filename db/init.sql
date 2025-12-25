@@ -8,6 +8,7 @@ CREATE TABLE nations (
     display_name VARCHAR(200),
     color VARCHAR(7) DEFAULT '#8B0000',  -- Default Roman red
     wiki_url VARCHAR(500),
+    flag_url VARCHAR(500),  -- Local path to flag image
     founded_year INTEGER,
     founded_era VARCHAR(2) CHECK (founded_era IN ('BC', 'AD')),
     description TEXT,
@@ -46,6 +47,7 @@ CREATE TABLE nation_snapshots (
     ruler_title VARCHAR(100),
     ruler_name VARCHAR(200),
     ruler_wiki_url VARCHAR(500),
+    ruler_portrait_url VARCHAR(500),  -- Local path to portrait image
     reign_start_year INTEGER,
     reign_start_era VARCHAR(2) CHECK (reign_start_era IN ('BC', 'AD')),
     reign_end_year INTEGER,
