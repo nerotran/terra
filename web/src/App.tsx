@@ -71,7 +71,6 @@ function App() {
         nation={currentTerritory?.nation || null}
         snapshotId={currentTerritory?.snapshot_id || 0}
         year={currentTerritory?.year || 0}
-        era={currentTerritory?.era || 'BC'}
         isOpen={isPanelOpen}
         onClose={handlePanelClose}
       />

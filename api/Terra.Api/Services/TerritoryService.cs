@@ -28,13 +28,11 @@ public class TerritoryService : ITerritoryService
     public async Task<List<SnapshotDto>> GetSnapshotsAsync()
     {
         return await _db.TimeSnapshots
-            .OrderBy(s => s.SortYear)
+            .OrderBy(s => s.Year)
             .Select(s => new SnapshotDto
             {
                 SnapshotId = s.Id,
                 Year = s.Year,
-                Era = s.Era,
-                SortYear = s.SortYear,
                 Label = s.Label
             })
             .ToListAsync();
@@ -58,8 +56,6 @@ public class TerritoryService : ITerritoryService
         {
             SnapshotId = t.SnapshotId,
             Year = t.Year,
-            Era = t.Era,
-            SortYear = t.SortYear,
             Label = t.Label,
             Nation = new NationDto
             {
@@ -79,7 +75,7 @@ public class TerritoryService : ITerritoryService
     {
         var territories = await _db.CumulativeTerritories
             .Include(t => t.Nation)
-            .OrderBy(t => t.SortYear)
+            .OrderBy(t => t.Year)
             .ToListAsync();
 
         return territories.Select(MapToDto).ToList();
@@ -107,15 +103,16 @@ public class TerritoryService : ITerritoryService
         var nation = await _db.Nations.FindAsync(nationId);
         if (nation == null) return null;
 
-        // Get the requested snapshot to find its sort_year
+        // Get the requested snapshot to find its year
         var requestedSnapshot = await _db.TimeSnapshots.FindAsync(snapshotId);
         if (requestedSnapshot == null) return null;
 
-        // Get time-specific snapshot data (find closest snapshot <= requested by sort_year)
+        // Get time-specific snapshot data (find closest snapshot <= requested year)
         var snapshot = await _db.NationSnapshots
             .Include(ns => ns.Snapshot)
-            .Where(ns => ns.NationId == nationId && ns.Snapshot.SortYear <= requestedSnapshot.SortYear)
-            .OrderByDescending(ns => ns.Snapshot.SortYear)
+            .Include(ns => ns.Ruler)
+            .Where(ns => ns.NationId == nationId && ns.Snapshot.Year <= requestedSnapshot.Year)
+            .OrderByDescending(ns => ns.Snapshot.Year)
             .FirstOrDefaultAsync();
 
         var dto = new NationDetailsDto
@@ -126,30 +123,32 @@ public class TerritoryService : ITerritoryService
             Color = nation.Color,
             WikiUrl = nation.WikiUrl,
             FlagUrl = nation.FlagUrl,
-            Founded = FormatYear(nation.FoundedYear, nation.FoundedEra),
+            FoundedYear = nation.FoundedYear,
             Description = nation.Description
         };
 
         if (snapshot != null)
         {
-            dto.RulerTitle = snapshot.RulerTitle;
-            dto.RulerName = snapshot.RulerName;
-            dto.RulerWikiUrl = snapshot.RulerWikiUrl;
-            dto.RulerPortraitUrl = snapshot.RulerPortraitUrl;
-            dto.ReignStart = FormatYear(snapshot.ReignStartYear, snapshot.ReignStartEra);
-            dto.ReignEnd = FormatYear(snapshot.ReignEndYear, snapshot.ReignEndEra);
             dto.Capital = snapshot.Capital;
             dto.Language = snapshot.Language;
             dto.Religion = snapshot.Religion;
             dto.Population = snapshot.Population;
+
+            if (snapshot.Ruler != null)
+            {
+                dto.Ruler = new RulerDto
+                {
+                    Id = snapshot.Ruler.Id,
+                    Name = snapshot.Ruler.Name,
+                    Title = snapshot.Ruler.Title,
+                    WikiUrl = snapshot.Ruler.WikiUrl,
+                    PortraitUrl = snapshot.Ruler.PortraitUrl,
+                    ReignStart = snapshot.Ruler.ReignStart,
+                    ReignEnd = snapshot.Ruler.ReignEnd
+                };
+            }
         }
 
         return dto;
-    }
-
-    private static string? FormatYear(int? year, string? era)
-    {
-        if (year == null) return null;
-        return $"{year} {era ?? "AD"}";
     }
 }

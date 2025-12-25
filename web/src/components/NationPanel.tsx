@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import type { Nation, NationDetails } from '../types';
+import { yearToDisplay } from '../types';
 
 interface NationPanelProps {
   nation: Nation | null;
   snapshotId: number;
-  year: number;
-  era: 'BC' | 'AD';
+  year: number;  // Signed: negative for BC, positive for AD
   isOpen: boolean;
   onClose: () => void;
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export function NationPanel({ nation, snapshotId, year, era, isOpen, onClose }: NationPanelProps) {
+export function NationPanel({ nation, snapshotId, year, isOpen, onClose }: NationPanelProps) {
   const [details, setDetails] = useState<NationDetails | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -41,8 +41,6 @@ export function NationPanel({ nation, snapshotId, year, era, isOpen, onClose }: 
 
   if (!nation) return null;
 
-  const yearDisplay = `${year} ${era}`;
-
   return (
     <div style={{
       ...styles.overlay,
@@ -68,18 +66,18 @@ export function NationPanel({ nation, snapshotId, year, era, isOpen, onClose }: 
                 nation.display_name || nation.name
               )}
             </h2>
-            <span style={styles.yearBadge}>{yearDisplay}</span>
+            <span style={styles.yearBadge}>{yearToDisplay(year)}</span>
           </div>
         </div>
 
         {/* Ruler Section */}
-        {details?.ruler_name && (
+        {details?.ruler && (
           <div style={styles.section}>
             <div style={styles.rulerContainer}>
-              {details.ruler_portrait_url ? (
+              {details.ruler.portrait_url ? (
                 <img
-                  src={`${API_BASE.replace('/api', '')}${details.ruler_portrait_url}`}
-                  alt={details.ruler_name}
+                  src={`${API_BASE.replace('/api', '')}${details.ruler.portrait_url}`}
+                  alt={details.ruler.name}
                   style={styles.portrait}
                 />
               ) : (
@@ -88,23 +86,21 @@ export function NationPanel({ nation, snapshotId, year, era, isOpen, onClose }: 
                 </div>
               )}
               <div style={styles.rulerInfo}>
-                {details.ruler_title && (
-                  <span style={styles.rulerTitle}>{details.ruler_title}</span>
+                {details.ruler.title && (
+                  <span style={styles.rulerTitle}>{details.ruler.title}</span>
                 )}
                 <span style={styles.rulerName}>
-                  {details.ruler_wiki_url ? (
-                    <a href={details.ruler_wiki_url} target="_blank" rel="noopener noreferrer" style={styles.link}>
-                      {details.ruler_name}
+                  {details.ruler.wiki_url ? (
+                    <a href={details.ruler.wiki_url} target="_blank" rel="noopener noreferrer" style={styles.link}>
+                      {details.ruler.name}
                     </a>
                   ) : (
-                    details.ruler_name
+                    details.ruler.name
                   )}
                 </span>
-                {(details.reign_start || details.reign_end) && (
-                  <span style={styles.reignDates}>
-                    Reign: {details.reign_start || '?'} - {details.reign_end || 'present'}
-                  </span>
-                )}
+                <span style={styles.reignDates}>
+                  Reign: {yearToDisplay(details.ruler.reign_start)} - {details.ruler.reign_end !== null ? yearToDisplay(details.ruler.reign_end) : 'present'}
+                </span>
               </div>
             </div>
           </div>
@@ -116,10 +112,10 @@ export function NationPanel({ nation, snapshotId, year, era, isOpen, onClose }: 
             <span style={styles.loadingText}>Loading details...</span>
           ) : details ? (
             <div style={styles.infoGrid}>
-              {details.founded && (
+              {details.founded_year !== null && (
                 <div style={styles.infoItem}>
                   <span style={styles.infoLabel}>Founded</span>
-                  <span style={styles.infoValue}>{details.founded}</span>
+                  <span style={styles.infoValue}>{yearToDisplay(details.founded_year)}</span>
                 </div>
               )}
               {details.capital && (
