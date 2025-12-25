@@ -51,8 +51,8 @@ def import_land_data(data):
     cur.execute("DELETE FROM base_map WHERE feature_type = 'land'")
     print("Cleared existing land data")
 
-    imported = 0
-
+    # Prepare all records first
+    records = []
     for feat in features:
         geometry = feat.get('geometry')
         if not geometry:
@@ -61,25 +61,24 @@ def import_land_data(data):
         props = feat.get('properties', {})
         name = props.get('name', props.get('featurecla', 'Land'))
         geometry_json = json.dumps(geometry)
+        records.append((name, geometry_json, json.dumps(props)))
 
-        cur.execute("""
-            INSERT INTO base_map (feature_type, name, geometry, properties)
-            VALUES (
-                'land',
-                %s,
-                ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)),
-                %s
-            )
-            RETURNING id
-        """, (name, geometry_json, json.dumps(props)))
-
-        imported += 1
-        print(f"  Imported: {name}")
+    # Batch insert using executemany for better performance
+    print(f"Inserting {len(records)} land features...")
+    cur.executemany("""
+        INSERT INTO base_map (feature_type, name, geometry, properties)
+        VALUES (
+            'land',
+            %s,
+            ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)),
+            %s
+        )
+    """, records)
 
     conn.commit()
     conn.close()
 
-    print(f"\nDone: {imported} imported")
+    print(f"Done: {len(records)} imported")
 
 
 if __name__ == '__main__':

@@ -5,8 +5,12 @@
 # Data files (download separately)
 data/*.topojson
 data/*.geojson
+data/assets/
 !data/.gitkeep
 !data/README.md
+
+# Logs
+logs/
 
 # Python
 __pycache__/
@@ -42,3 +46,4 @@ docker-compose.override.yml
 # Claude
 .claude/
 .serena/
+CLAUDE.md

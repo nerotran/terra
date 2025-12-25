@@ -1,5 +1,7 @@
 # Data Sources
 
+Terra is a historical mapping project that will cover all countries and civilizations throughout human history. The current implementation starts with the Roman Empire, but the architecture is designed to support any historical territory data.
+
 Geographic data is not committed to this repo. Download before running imports.
 
 ## Roman Empire (500 BC - 117 AD)
@@ -17,6 +19,6 @@ Then import:
 python db/scripts/import_territories.py data/roman-empire.topojson
 ```
 
-## Adding New Scenarios
+## Adding New Data Sources
 
-Future data sources will be documented here.
+Future data sources (e.g., ancient civilizations, medieval kingdoms, colonial empires, modern nation-states) will be documented here as they are added.

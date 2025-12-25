@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Terra.Api.Data;
 using Terra.Api.Services;
 
@@ -47,6 +48,20 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+
+// Serve static assets (portraits, flags)
+var assetsPath = Environment.GetEnvironmentVariable("ASSETS_PATH")
+    ?? Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "data", "assets");
+
+if (Directory.Exists(assetsPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(Path.GetFullPath(assetsPath)),
+        RequestPath = "/assets"
+    });
+}
+
 app.MapControllers();
 
 app.Run();

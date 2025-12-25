@@ -11,6 +11,7 @@ public interface ITerritoryService
     Task<TerritoryDto?> GetTerritoryAsync(int snapshotId);
     Task<List<TerritoryDto>> GetAllTerritoriesAsync();
     Task<BaseMapDto> GetBaseMapAsync(string featureType = "land");
+    Task<NationDetailsDto?> GetNationDetailsAsync(int nationId, int snapshotId);
 }
 
 public class TerritoryService : ITerritoryService
@@ -42,21 +43,34 @@ public class TerritoryService : ITerritoryService
     public async Task<TerritoryDto?> GetTerritoryAsync(int snapshotId)
     {
         var territory = await _db.CumulativeTerritories
+            .Include(t => t.Nation)
             .Where(t => t.SnapshotId == snapshotId)
             .FirstOrDefaultAsync();
 
         if (territory == null) return null;
 
+        return MapToDto(territory);
+    }
+
+    private TerritoryDto MapToDto(CumulativeTerritory t)
+    {
         return new TerritoryDto
         {
-            SnapshotId = territory.SnapshotId,
-            Year = territory.Year,
-            Era = territory.Era,
-            SortYear = territory.SortYear,
-            Label = territory.Label,
-            Color = territory.Color,
-            Geometry = territory.Geometry != null
-                ? System.Text.Json.JsonSerializer.Deserialize<object>(_geoJsonWriter.Write(territory.Geometry))
+            SnapshotId = t.SnapshotId,
+            Year = t.Year,
+            Era = t.Era,
+            SortYear = t.SortYear,
+            Label = t.Label,
+            Nation = new NationDto
+            {
+                Id = t.Nation.Id,
+                Name = t.Nation.Name,
+                DisplayName = t.Nation.DisplayName,
+                Color = t.Nation.Color,
+                WikiUrl = t.Nation.WikiUrl
+            },
+            Geometry = t.Geometry != null
+                ? System.Text.Json.JsonSerializer.Deserialize<object>(_geoJsonWriter.Write(t.Geometry))
                 : null
         };
     }
@@ -64,21 +78,11 @@ public class TerritoryService : ITerritoryService
     public async Task<List<TerritoryDto>> GetAllTerritoriesAsync()
     {
         var territories = await _db.CumulativeTerritories
+            .Include(t => t.Nation)
             .OrderBy(t => t.SortYear)
             .ToListAsync();
 
-        return territories.Select(t => new TerritoryDto
-        {
-            SnapshotId = t.SnapshotId,
-            Year = t.Year,
-            Era = t.Era,
-            SortYear = t.SortYear,
-            Label = t.Label,
-            Color = t.Color,
-            Geometry = t.Geometry != null
-                ? System.Text.Json.JsonSerializer.Deserialize<object>(_geoJsonWriter.Write(t.Geometry))
-                : null
-        }).ToList();
+        return territories.Select(MapToDto).ToList();
     }
 
     public async Task<BaseMapDto> GetBaseMapAsync(string featureType = "land")
@@ -96,5 +100,56 @@ public class TerritoryService : ITerritoryService
                     : null
             }).ToList()
         };
+    }
+
+    public async Task<NationDetailsDto?> GetNationDetailsAsync(int nationId, int snapshotId)
+    {
+        var nation = await _db.Nations.FindAsync(nationId);
+        if (nation == null) return null;
+
+        // Get the requested snapshot to find its sort_year
+        var requestedSnapshot = await _db.TimeSnapshots.FindAsync(snapshotId);
+        if (requestedSnapshot == null) return null;
+
+        // Get time-specific snapshot data (find closest snapshot <= requested by sort_year)
+        var snapshot = await _db.NationSnapshots
+            .Include(ns => ns.Snapshot)
+            .Where(ns => ns.NationId == nationId && ns.Snapshot.SortYear <= requestedSnapshot.SortYear)
+            .OrderByDescending(ns => ns.Snapshot.SortYear)
+            .FirstOrDefaultAsync();
+
+        var dto = new NationDetailsDto
+        {
+            Id = nation.Id,
+            Name = nation.Name,
+            DisplayName = nation.DisplayName,
+            Color = nation.Color,
+            WikiUrl = nation.WikiUrl,
+            FlagUrl = nation.FlagUrl,
+            Founded = FormatYear(nation.FoundedYear, nation.FoundedEra),
+            Description = nation.Description
+        };
+
+        if (snapshot != null)
+        {
+            dto.RulerTitle = snapshot.RulerTitle;
+            dto.RulerName = snapshot.RulerName;
+            dto.RulerWikiUrl = snapshot.RulerWikiUrl;
+            dto.RulerPortraitUrl = snapshot.RulerPortraitUrl;
+            dto.ReignStart = FormatYear(snapshot.ReignStartYear, snapshot.ReignStartEra);
+            dto.ReignEnd = FormatYear(snapshot.ReignEndYear, snapshot.ReignEndEra);
+            dto.Capital = snapshot.Capital;
+            dto.Language = snapshot.Language;
+            dto.Religion = snapshot.Religion;
+            dto.Population = snapshot.Population;
+        }
+
+        return dto;
+    }
+
+    private static string? FormatYear(int? year, string? era)
+    {
+        if (year == null) return null;
+        return $"{year} {era ?? "AD"}";
     }
 }
