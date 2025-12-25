@@ -62,8 +62,6 @@ cd web && npm install && npm run dev
 terra/
 ├── docker-compose.yml      # PostgreSQL + PostGIS + Importer
 ├── terra.sln               # .NET solution file
-├── docs/
-│   └── terra-geodata-builder-design.md  # Future geodata service design
 ├── db/
 │   ├── init.sql            # Database schema
 │   └── scripts/
@@ -103,14 +101,15 @@ terra/
 
 ## Future Development
 
-### Terra Geodata Builder
+### Orbis Geodata
 
-A separate service is planned to aggregate territory data from multiple sources, enabling expansion to all historical nations. See `docs/terra-geodata-builder-design.md` for the full design.
+A separate service (`orbis-geodata` repository) is being developed to store and serve historical territory data. Unlike data aggregation approaches, Orbis focuses on **original research** — constructing territory boundaries from primary and secondary historical sources using QGIS, with full bibliography and provenance tracking.
 
-**Target sources:**
-- [Historical Basemaps](https://github.com/aourednik/historical-basemaps) - World boundaries 3000 BC - present
-- [Project MERCURY](https://projectmercury.eu/datasets/) - Roman provinces
-- [CShapes](https://icr.ethz.ch/data/cshapes/) - Modern states post-1886
+Terra will pull data from Orbis on-demand to populate its database.
+
+**MVP:** Rome (753 BC - 117 AD)
+
+**Future phases:** Carthage, Ptolemaic Egypt, Seleucid Empire, and eventually all civilizations throughout history.
 
 ### Year-by-Year Timeline
 
@@ -133,7 +132,6 @@ cd web && npm run lint
 
 - `TERRA_PROJECT_SUMMARY.md` - Detailed project documentation
 - `CLAUDE.md` - Claude Code guidance for this repo
-- `docs/terra-geodata-builder-design.md` - Geodata service design
 
 ## License
 

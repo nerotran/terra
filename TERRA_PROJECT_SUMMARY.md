@@ -4,7 +4,7 @@
 
 Interactive historical map visualization showing territorial changes through time for all countries and civilizations throughout human history. User drags a time slider, borders evolve on the map.
 
-The current implementation starts with the Roman Empire, but the architecture is designed to support any historical territory data. A separate geodata builder service is planned to aggregate data from multiple sources.
+The current implementation starts with the Roman Empire, but the architecture is designed to support any historical territory data. A separate service called **Orbis Geodata** is being developed to store and serve authoritative territory data created through original research.
 
 **GitHub:** https://github.com/nerotran/terra
 
@@ -17,7 +17,7 @@ The current implementation starts with the Roman Empire, but the architecture is
 
 ### In Progress
 - **Issue #4:** Year-by-year timeline with event-based schema
-- **Terra Geodata Builder:** Separate API for aggregating territory data (see `docs/terra-geodata-builder-design.md`)
+- **Orbis Geodata:** Separate service for storing and serving territory data
 
 ## Tech Stack
 
@@ -35,8 +35,6 @@ terra/
 ├── docker-compose.yml
 ├── terra.sln
 ├── .env.example
-├── docs/
-│   └── terra-geodata-builder-design.md  # Design for geodata aggregation service
 ├── db/
 │   ├── init.sql
 │   └── scripts/
@@ -214,44 +212,61 @@ Better approach: Curated asset library or manual mapping.
 
 **Approach:** Event-based schema with `start_year`/`end_year` columns. See full design in Issue #4 section below.
 
-## Terra Geodata Builder (New Project)
+## Orbis Geodata (Separate Project)
 
-A separate service to aggregate, normalize, and process historical territory data from multiple sources. This enables scaling to all countries and civilizations throughout history.
+A standalone service that stores and serves historical territory data for Terra and other consumers. All data is created through **original research** — no external dataset imports.
 
-**Design document:** `docs/terra-geodata-builder-design.md`
+**Repository:** `orbis-geodata` (separate from Terra)
+
+### Why Original Research?
+
+- External datasets have inconsistent formats requiring adapter maintenance
+- Quality varies — better to build authoritative data from scratch
+- Full control over accuracy and provenance
+- Creates a unique scholarly resource with proper bibliography
+
+### Research Workflow
+
+1. **Primary sources:** Ancient historians (Livy, Polybius, Tacitus), archaeological surveys, ancient maps
+2. **Secondary sources:** Academic monographs, historical atlases (Barrington), journal articles
+3. **GIS construction:** Draw boundaries in QGIS based on research, document sources and confidence
+4. **Import:** Upload via API with bibliography and notes
 
 ### Why a Separate Service?
 
-- Massive data aggregation from hundreds of sources
-- Complex GIS processing (different formats, resolutions, conventions)
-- Separation of concerns from main Terra app
-- Potential for community data contributions
+- **Public API** — Serve as a data source for any project, not just Terra
+- **Research platform** — Infrastructure for original historical research
+- **Community contributions** — Others can submit corrections or new data
+- **Independent development** — Separate from Terra's web application concerns
 
 ### Target Scope
 
-1. **Phase 1:** Ancient Mediterranean (Rome, Carthage, Egypt, etc.)
-2. **Phase 2:** Ancient World (Persia, Greece, India, China)
-3. **Phase 3:** Medieval Period (Byzantium, Caliphates, Mongols)
-4. **Phase 4:** Early Modern (Colonial empires, Ottomans)
-5. **Phase 5:** Modern Era (Nation-states 1648 - present)
+| Phase | Coverage |
+|-------|----------|
+| **MVP** | Rome (753 BC - 117 AD) |
+| **Phase 1** | Ancient Mediterranean (Carthage, Ptolemaic Egypt, Seleucid Empire) |
+| **Phase 2** | Ancient World (Persia, Greece, Maurya India, Han China) |
+| **Phase 3** | Medieval Period (Byzantium, Islamic Caliphates, Mongol Empire) |
+| **Phase 4** | Early Modern (Colonial empires, Ottomans, Ming/Qing China) |
+| **Phase 5** | Modern Era (Nation-states 1648 - present) |
 
-### Data Sources Investigated
+### Tech Stack
 
-| Source | Useful? | Notes |
-|--------|---------|-------|
-| [Sirius Bontea](https://github.com/siriusbontea/roman-empire) | ✅ Yes | Primary source, 13 Roman snapshots |
-| [Historical Basemaps](https://github.com/aourednik/historical-basemaps) | ✅ Yes | World boundaries 3000 BC - present |
-| [Project MERCURY](https://projectmercury.eu/datasets/) | ✅ Yes | Roman provinces, multiple formats |
-| [CShapes](https://icr.ethz.ch/data/cshapes/) | ✅ Yes | Modern states post-1886 |
-| AWMC | ❌ No | Less data than Sirius Bontea |
-| DARMC | ❌ No | Roads only, no territories |
-| Pelagios | ❌ No | Places only, no territories |
-
-### Proposed Tech Stack
-
-- **Python** with FastAPI, GeoPandas, Shapely
+- **Python** with FastAPI, GeoPandas, Shapely, GeoAlchemy2
 - PostgreSQL + PostGIS for storage
-- REST API for Terra integration
+- Public REST API
+
+### Terra Integration
+
+Terra pulls data from Orbis on-demand (not periodic sync). Historical data is static — Rome's 117 AD boundaries don't change unless new research is done.
+
+```bash
+# Pull everything (initial setup)
+python import_from_orbis.py --all
+
+# Pull specific nation (after new research)
+python import_from_orbis.py --nation carthage
+```
 
 ## Issue #4 Technical Details
 
