@@ -6,16 +6,10 @@ public class SnapshotDto
 {
     [JsonPropertyName("snapshot_id")]
     public int SnapshotId { get; set; }
-    
+
     [JsonPropertyName("year")]
-    public int Year { get; set; }
-    
-    [JsonPropertyName("era")]
-    public string Era { get; set; } = string.Empty;
-    
-    [JsonPropertyName("sort_year")]
-    public int SortYear { get; set; }
-    
+    public int Year { get; set; }  // Signed: negative for BC, positive for AD
+
     [JsonPropertyName("label")]
     public string? Label { get; set; }
 }
@@ -38,6 +32,30 @@ public class NationDto
     public string? WikiUrl { get; set; }
 }
 
+public class RulerDto
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+
+    [JsonPropertyName("wiki_url")]
+    public string? WikiUrl { get; set; }
+
+    [JsonPropertyName("portrait_url")]
+    public string? PortraitUrl { get; set; }
+
+    [JsonPropertyName("reign_start")]
+    public int ReignStart { get; set; }  // Signed year
+
+    [JsonPropertyName("reign_end")]
+    public int? ReignEnd { get; set; }  // Signed year, null if still reigning
+}
+
 public class NationDetailsDto
 {
     [JsonPropertyName("id")]
@@ -58,31 +76,17 @@ public class NationDetailsDto
     [JsonPropertyName("flag_url")]
     public string? FlagUrl { get; set; }
 
-    [JsonPropertyName("founded")]
-    public string? Founded { get; set; }
+    [JsonPropertyName("founded_year")]
+    public int? FoundedYear { get; set; }  // Signed year
 
     [JsonPropertyName("description")]
     public string? Description { get; set; }
 
+    // Current ruler for the snapshot
+    [JsonPropertyName("ruler")]
+    public RulerDto? Ruler { get; set; }
+
     // Time-specific data from nation_snapshots
-    [JsonPropertyName("ruler_title")]
-    public string? RulerTitle { get; set; }
-
-    [JsonPropertyName("ruler_name")]
-    public string? RulerName { get; set; }
-
-    [JsonPropertyName("ruler_wiki_url")]
-    public string? RulerWikiUrl { get; set; }
-
-    [JsonPropertyName("ruler_portrait_url")]
-    public string? RulerPortraitUrl { get; set; }
-
-    [JsonPropertyName("reign_start")]
-    public string? ReignStart { get; set; }
-
-    [JsonPropertyName("reign_end")]
-    public string? ReignEnd { get; set; }
-
     [JsonPropertyName("capital")]
     public string? Capital { get; set; }
 
@@ -102,13 +106,7 @@ public class TerritoryDto
     public int SnapshotId { get; set; }
 
     [JsonPropertyName("year")]
-    public int Year { get; set; }
-
-    [JsonPropertyName("era")]
-    public string Era { get; set; } = string.Empty;
-
-    [JsonPropertyName("sort_year")]
-    public int SortYear { get; set; }
+    public int Year { get; set; }  // Signed: negative for BC, positive for AD
 
     [JsonPropertyName("label")]
     public string? Label { get; set; }

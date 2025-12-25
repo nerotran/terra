@@ -29,26 +29,37 @@ DB_CONFIG = {
 }
 
 
+def year_to_display(year):
+    """Convert signed year to display string (e.g., -500 -> '500 BC')."""
+    if year < 0:
+        return f'{abs(year)} BC'
+    elif year > 0:
+        return f'{year} AD'
+    else:
+        return '1 BC'
+
+
 def parse_year_string(props):
-    """Extract year and era from properties.year_string like '298 B.C.' or 'A.D. 117'"""
+    """Extract signed year from properties.year_string like '298 B.C.' or 'A.D. 117'.
+    Returns negative for BC, positive for AD."""
     year_str = props.get('year_string', '')
     if not year_str:
         return None
-    
+
     # Format: "298 B.C." (year first)
     match = re.search(r'(\d+)\s*(B\.?C\.?|A\.?D\.?)', year_str, re.IGNORECASE)
     if match:
         year = int(match.group(1))
-        era = 'BC' if 'B' in match.group(2).upper() else 'AD'
-        return (year, era)
-    
+        is_bc = 'B' in match.group(2).upper()
+        return -year if is_bc else year
+
     # Format: "A.D. 117" (era first)
     match = re.search(r'(B\.?C\.?|A\.?D\.?)\s*(\d+)', year_str, re.IGNORECASE)
     if match:
         year = int(match.group(2))
-        era = 'BC' if 'B' in match.group(1).upper() else 'AD'
-        return (year, era)
-    
+        is_bc = 'B' in match.group(1).upper()
+        return -year if is_bc else year
+
     return None
 
 
@@ -56,7 +67,7 @@ def decode_topojson(data):
     """Convert TopoJSON to GeoJSON features."""
     arcs = data['arcs']
     transform = data.get('transform')
-    
+
     # Pre-decode all arcs (apply delta encoding + transform)
     decoded_arcs = []
     for arc in arcs:
@@ -73,14 +84,14 @@ def decode_topojson(data):
             else:
                 coords.append([x, y])
         decoded_arcs.append(coords)
-    
+
     def get_arc(idx):
         """Get arc by index, reversing if negative."""
         if idx >= 0:
             return list(decoded_arcs[idx])
         else:
             return list(reversed(decoded_arcs[~idx]))
-    
+
     def decode_ring(arc_indices):
         """Stitch arcs into a closed ring."""
         coords = []
@@ -95,11 +106,11 @@ def decode_topojson(data):
         if coords and coords[0] != coords[-1]:
             coords.append(coords[0])
         return coords
-    
+
     def decode_geometry(geom):
         """Decode a TopoJSON geometry to GeoJSON."""
         gtype = geom.get('type')
-        
+
         if gtype == 'Polygon':
             return {
                 'type': 'Polygon',
@@ -114,7 +125,7 @@ def decode_topojson(data):
                 ]
             }
         return None
-    
+
     # Extract features from all objects
     features = []
     for obj_name, obj in data.get('objects', {}).items():
@@ -135,7 +146,7 @@ def decode_topojson(data):
                     'properties': {**obj.get('properties', {}), '_layer': obj_name},
                     'geometry': geometry
                 })
-    
+
     return features
 
 
@@ -143,16 +154,16 @@ def load_file(filepath):
     """Load GeoJSON or TopoJSON file."""
     with open(filepath) as f:
         data = json.load(f)
-    
+
     if 'arcs' in data:
         print("Detected TopoJSON, converting...")
         return decode_topojson(data)
-    
+
     if data.get('type') == 'FeatureCollection':
         return data['features']
     elif data.get('type') == 'Feature':
         return [data]
-    
+
     return [{'type': 'Feature', 'geometry': data, 'properties': {}}]
 
 
@@ -168,40 +179,39 @@ def import_file(filepath):
     cur.execute("SELECT name, id FROM nations")
     nations = dict(cur.fetchall())
 
-    # Cache snapshots (will grow as we insert)
-    cur.execute("SELECT year, era, id FROM time_snapshots")
-    snapshots = {(r[0], r[1]): r[2] for r in cur.fetchall()}
+    # Cache snapshots by year (will grow as we insert)
+    cur.execute("SELECT year, id FROM time_snapshots")
+    snapshots = {r[0]: r[1] for r in cur.fetchall()}
 
     # First pass: create any missing snapshots
     new_snapshots = []
     for feat in features:
         props = feat.get('properties', {})
-        parsed = parse_year_string(props)
-        if not parsed:
+        year = parse_year_string(props)
+        if year is None:
             continue
-        year, era = parsed
-        if (year, era) not in snapshots:
-            label = props.get('title_header', props.get('long_name', f'{year} {era}'))
-            new_snapshots.append((year, era, label, props.get('long_name', '')))
-            snapshots[(year, era)] = None  # Placeholder
+        if year not in snapshots:
+            label = props.get('title_header', props.get('long_name', year_to_display(year)))
+            new_snapshots.append((year, label, props.get('long_name', '')))
+            snapshots[year] = None  # Placeholder
 
     # Batch insert new snapshots
     if new_snapshots:
-        for year, era, label, desc in new_snapshots:
+        for year, label, desc in new_snapshots:
             cur.execute("""
-                INSERT INTO time_snapshots (year, era, label, description)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (year, era) DO NOTHING
+                INSERT INTO time_snapshots (year, label, description)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (year) DO NOTHING
                 RETURNING id
-            """, (year, era, label, desc))
+            """, (year, label, desc))
             result = cur.fetchone()
             if result:
-                snapshots[(year, era)] = result[0]
-                print(f"  Created snapshot: {year} {era}")
+                snapshots[year] = result[0]
+                print(f"  Created snapshot: {year_to_display(year)}")
 
         # Refresh cache for any that existed
-        cur.execute("SELECT year, era, id FROM time_snapshots")
-        snapshots = {(r[0], r[1]): r[2] for r in cur.fetchall()}
+        cur.execute("SELECT year, id FROM time_snapshots")
+        snapshots = {r[0]: r[1] for r in cur.fetchall()}
 
     # Second pass: prepare territory records
     records = []
@@ -209,20 +219,18 @@ def import_file(filepath):
 
     for feat in features:
         props = feat.get('properties', {})
-        parsed = parse_year_string(props)
-        if not parsed:
-            layer = props.get('_layer', props.get('year_string', 'unknown'))
+        year = parse_year_string(props)
+        if year is None:
             skipped += 1
             continue
 
-        year, era = parsed
-        snapshot_id = snapshots[(year, era)]
+        snapshot_id = snapshots[year]
 
-        # Republic before 27 BC, Empire after
-        nation = 'rome_republic' if era == 'BC' and year > 27 else 'rome'
+        # Republic before 27 BC (year < -27), Empire after
+        nation = 'rome_republic' if year < -27 else 'rome'
         nation_id = nations[nation]
 
-        name = props.get('long_name', props.get('name', f'Roman Territory {year} {era}'))
+        name = props.get('long_name', props.get('name', f'Roman Territory {year_to_display(year)}'))
         geometry = json.dumps(feat['geometry'])
 
         records.append((nation_id, snapshot_id, name, geometry, json.dumps(feat), json.dumps(props)))

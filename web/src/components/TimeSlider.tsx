@@ -1,4 +1,5 @@
 import type { TimeSnapshot } from '../types';
+import { yearToDisplay } from '../types';
 
 interface TimeSliderProps {
   snapshots: TimeSnapshot[];
@@ -20,10 +21,6 @@ export function TimeSlider({ snapshots, currentIndex, onChange, panelOpen = fals
 
   const current = snapshots[currentIndex];
 
-  const formatYear = (year: number, era: 'BC' | 'AD') => {
-    return era === 'BC' ? `${year} BC` : `${year} AD`;
-  };
-
   return (
     <div style={{
       padding: '1rem',
@@ -42,7 +39,7 @@ export function TimeSlider({ snapshots, currentIndex, onChange, panelOpen = fals
       />
       {current && (
         <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-          <strong>{formatYear(current.year, current.era)}</strong>
+          <strong>{yearToDisplay(current.year)}</strong>
           <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>{current.label}</div>
         </div>
       )}
